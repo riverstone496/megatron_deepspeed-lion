@@ -23,6 +23,7 @@ else:
 
 from megatron import get_args
 from megatron.model import LayerNorm
+from megatron import print_rank_0
 
 from .grad_scaler import ConstantGradScaler, DynamicGradScaler
 from .optimizer import Float16OptimizerWithFloat16Params, FP32Optimizer
@@ -59,7 +60,7 @@ def get_megatron_optimizer(model, deepspeed=None):
     if args.create_moe_param_group:
         from deepspeed.moe.utils import is_moe_param, split_params_into_different_moe_groups_for_optimizer
         param_groups = split_params_into_different_moe_groups_for_optimizer(param_groups)
-    
+    print_rank_0(f'Optimizer = {args.optimizer} \n')
     if args.cpu_optimizer:
         assert args.optimizer == 'adam', 'CPU offloading is for Adam'
         if args.cpu_torch_adam:
@@ -83,7 +84,7 @@ def get_megatron_optimizer(model, deepspeed=None):
                             weight_decay=args.weight_decay,
                             momentum=args.sgd_momentum)
         elif args.optimizer == 'zerooneadam':
-            from onebit.zoadam import ZeroOneAdam
+            from .onebit.zoadam import ZeroOneAdam
             optimizer = ZeroOneAdam(param_groups,
                             deepspeed=deepspeed,
                             lr=args.lr,
@@ -91,7 +92,7 @@ def get_megatron_optimizer(model, deepspeed=None):
                             betas=(args.adam_beta1, args.adam_beta2),
                             eps=args.adam_eps)
         elif args.optimizer == 'onebitadam':
-            from onebit.adam import OnebitAdam
+            from .onebit.adam import OnebitAdam
             optimizer = OnebitAdam(param_groups,
                             deepspeed=deepspeed,
                             lr=args.lr,
