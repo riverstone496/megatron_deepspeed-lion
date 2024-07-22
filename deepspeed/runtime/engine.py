@@ -192,11 +192,7 @@ class DeepSpeedEngine(Module):
         unwrapped_model = None
     ):
         super(DeepSpeedEngine, self).__init__()
-        optimizer = optimizer(unwrapped_model, self)
-        lr_scheduler = lr_scheduler(optimizer)
         self.dont_change_device = dont_change_device
-        self.client_optimizer = optimizer
-        self.client_lr_scheduler = lr_scheduler
         self.training_data = training_data
         self.collate_fn = collate_fn
         self.mpu = mpu
@@ -225,6 +221,10 @@ class DeepSpeedEngine(Module):
         self._step_applied = False
         self._global_grad_norm = None
         self.use_ds_comm = False  # False --> Use torch.dist, True --> Use ds.comm backend.
+        optimizer = optimizer(unwrapped_model, self)
+        lr_scheduler = lr_scheduler(optimizer)
+        self.client_optimizer = optimizer
+        self.client_lr_scheduler = lr_scheduler
 
         self.checkpoint_engine = None
 

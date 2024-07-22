@@ -93,5 +93,5 @@ deepspeed --num_nodes ${NUM_NODES} \
     --deepspeed_config ${CONFIG_FILE} \
     --zero-stage ${ZERO_STAGE} \
     --deepspeed-activation-checkpointing \
-    --optimizer zerooneadam \
+    --optimizer onebitadam \
     --no-pipeline-parallel
