@@ -1,0 +1,9 @@
+pybind11
+torch
+six
+regex
+numpy
+
+deepspeed
+wandb
+tensorboard
