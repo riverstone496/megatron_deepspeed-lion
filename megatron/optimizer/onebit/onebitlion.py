@@ -47,16 +47,13 @@ class OnebitLion(torch.optim.Optimizer):
                  params,
                  deepspeed=None,
                  lr=1e-4,
-                 freeze_step=100000,
+                 freeze_step=10,
                  betas=(0.9, 0.99),
                  weight_decay=0.,
                  cuda_aware=False,
                  comm_backend_name='nccl'):
 
         defaults = dict(lr=lr, betas=betas, weight_decay=weight_decay)
-
-        super(OnebitLion, self).__init__(params, defaults)
-
 
         super(OnebitLion, self).__init__(params, defaults)
         self.comm_time = 0.0
@@ -172,11 +169,11 @@ class OnebitLion(torch.optim.Optimizer):
                 state['step'] += 1
 
                 if self.adam_freeze_key is False:
-                    grad = None
                     if self.initialize:
                         # update = exp_avg / (exp_avg_sq.sqrt() + group['eps'])
                         update = exp_avg.clone().mul_(beta1).add(grad, alpha=1 - beta1).sign_()
-                    exp_avg.mul_(beta2).add_(1 - beta2, grad)
+                        exp_avg.mul_(beta2).add_(1 - beta2, grad)
+                    grad = None
                 else:
                     if 'non_freeze' in group.keys() and group['non_freeze'] is True:
                         dist.all_reduce(grad)
@@ -185,10 +182,6 @@ class OnebitLion(torch.optim.Optimizer):
                         exp_avg.mul_(beta2).add_(1 - beta2, grad)
                         grad = None
                     else:
-                        if self.initialize is True:
-                            exp_avg.mul_(beta2).add_(1 - beta2, grad)
-                        grad = None
-
                         if self.size > 1:
                             update = exp_avg.clone().mul_(beta1).add(grad, alpha=1 - beta1)
                             update = self.comm_backend_handle.compressed_allreduce(update, state['worker_error'],
@@ -202,9 +195,12 @@ class OnebitLion(torch.optim.Optimizer):
                         # learns up to seq length 128 while the model supports up to 512 seq length.
                         # (See example in DeepSpeedExamples/bing_bert/deepspeed_train.py.)
                         if 'exp_avg_mask' in group:
-                            if exp_avg.device != group['exp_avg_mask'].device:
+                            if update.device != group['exp_avg_mask'].device:
                                 group['exp_avg_mask'] = group['exp_avg_mask'].to(device=update.device)
                             update.mul_(group['exp_avg_mask'])
+                        if self.initialize is True:
+                            exp_avg.mul_(beta2).add_(1 - beta2, grad)
+                        grad = None
 
                     if self.initialize:
                         # update = exp_avg / (exp_avg_sq.sqrt() + group['eps'])

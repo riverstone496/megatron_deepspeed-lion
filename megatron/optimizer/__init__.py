@@ -99,6 +99,20 @@ def get_megatron_optimizer(model, deepspeed=None):
                             weight_decay=args.weight_decay,
                             betas=(args.adam_beta1, args.adam_beta2),
                             eps=args.adam_eps)
+        elif args.optimizer == 'mvlion':
+            from .onebit.lion import MVLion
+            optimizer = MVLion(param_groups,
+                            deepspeed=deepspeed,
+                            lr=args.lr,
+                            weight_decay=args.weight_decay,
+                            betas=(args.adam_beta1, args.adam_beta2))
+        elif args.optimizer == 'onebitlion':
+            from .onebit.onebitlion import OnebitLion
+            optimizer = OnebitLion(param_groups,
+                            deepspeed=deepspeed,
+                            lr=args.lr,
+                            weight_decay=args.weight_decay,
+                            betas=(args.adam_beta1, args.adam_beta2))
         else:
             raise Exception('{} optimizer is not supported.'.format(
             args.optimizer))
