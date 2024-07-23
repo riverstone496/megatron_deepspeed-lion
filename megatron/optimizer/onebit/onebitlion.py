@@ -176,7 +176,7 @@ class OnebitLion(torch.optim.Optimizer):
                     if self.initialize:
                         # update = exp_avg / (exp_avg_sq.sqrt() + group['eps'])
                         update = exp_avg.clone().mul_(beta1).add(grad, alpha=1 - beta1).sign_()
-                        exp_avg.mul_(beta2).add_(1 - beta2, grad)
+                    exp_avg.mul_(beta2).add_(1 - beta2, grad)
                 else:
                     if 'non_freeze' in group.keys() and group['non_freeze'] is True:
                         dist.all_reduce(grad)
@@ -289,44 +289,3 @@ class OnebitLion(torch.optim.Optimizer):
                     self.state[p].pop('worker_error')
                 if 'server_error' in self.state[p]:
                     self.state[p].pop('server_error')
-
-def pack_binary_tensor(tensor):
-    # -1を0に、1を1に変換
-    packed = (tensor + 1) // 2
-    # 8ビットごとにパック
-    packed = packed.view(-1, 8)
-    packed = packed[:, 0] + packed[:, 1] * 2 + packed[:, 2] * 4 + packed[:, 3] * 8 + \
-             packed[:, 4] * 16 + packed[:, 5] * 32 + packed[:, 6] * 64 + packed[:, 7] * 128
-    return packed.byte()
-
-def unpack_binary_tensor(packed, original_shape):
-    # バイトを8ビットに展開
-    unpacked = torch.zeros(packed.numel() * 8, dtype=torch.uint8, device=packed.device)
-    for i in range(8):
-        unpacked[i::8] = (packed >> i) & 1
-    # 0を-1に、1を1に戻す
-    unpacked = unpacked.view(original_shape) * 2 - 1
-    return unpacked
-
-def binary_quantize_allreduce(tensor):
-    # 元のshapeとデバイスを保存
-    original_shape = tensor.shape
-    device = tensor.device
-    
-    # テンソルを-1または1に量子化
-    quantized = torch.sign(tensor)
-    
-    # 量子化されたテンソルをuint8にパック
-    packed = pack_binary_tensor(quantized)
-    
-    # All-Reduceの実行
-    dist.all_reduce(packed)
-    
-    # パックされたテンソルを元の形式に戻す
-    unpacked = unpack_binary_tensor(packed, original_shape)
-    
-    # プロセス数で割って平均を取る
-    world_size = dist.get_world_size()
-    result = unpacked.float() / world_size
-    
-    return result
