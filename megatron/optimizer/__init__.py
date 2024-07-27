@@ -99,6 +99,13 @@ def get_megatron_optimizer(model, deepspeed=None):
                             weight_decay=args.weight_decay,
                             betas=(args.adam_beta1, args.adam_beta2),
                             eps=args.adam_eps)
+        elif args.optimizer == 'lion':
+            from .standard.lion import Lion
+            optimizer = Lion(param_groups,
+                            deepspeed=deepspeed,
+                            lr=args.lr,
+                            weight_decay=args.weight_decay,
+                            betas=(args.adam_beta1, args.adam_beta2))
         elif args.optimizer == 'mvlion':
             from .onebit.lion import MVLion
             optimizer = MVLion(param_groups,
