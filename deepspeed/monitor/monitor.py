@@ -28,7 +28,7 @@ from .csv_monitor import csvMonitor
 
 class MonitorMaster(Monitor):
 
-    def __init__(self, monitor_config):
+    def __init__(self, monitor_config, args=None):
         super().__init__(monitor_config)
         self.tb_monitor = None
         self.wandb_monitor = None
@@ -39,7 +39,7 @@ class MonitorMaster(Monitor):
             if monitor_config.tensorboard.enabled:
                 self.tb_monitor = TensorBoardMonitor(monitor_config.tensorboard)
             if monitor_config.wandb.enabled:
-                self.wandb_monitor = WandbMonitor(monitor_config.wandb)
+                self.wandb_monitor = WandbMonitor(monitor_config.wandb, args)
             if monitor_config.csv_monitor.enabled:
                 self.csv_monitor = csvMonitor(monitor_config.csv_monitor)
 

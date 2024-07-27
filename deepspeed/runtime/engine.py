@@ -252,7 +252,7 @@ class DeepSpeedEngine(Module):
 
         dist.configure(self._config)
 
-        self.monitor = MonitorMaster(self._config.monitor_config)
+        self.monitor = MonitorMaster(self._config.monitor_config, args)
 
         see_memory_usage(
             f"DeepSpeed Engine: Before configure distributed model",
