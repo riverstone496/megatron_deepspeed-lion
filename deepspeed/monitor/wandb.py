@@ -19,7 +19,10 @@ class WandbMonitor(Monitor):
         self.enabled = wandb_config.enabled
         self.group = wandb_config.group
         self.team = wandb_config.team
-        self.project = wandb_config.project
+        if args.wandb_project is None:
+            self.project = wandb_config.project
+        else:
+            self.project = args.wandb_project
 
         if self.enabled and dist.get_rank() == 0:
             wandb.init(project=self.project, group=self.group, entity=self.team, config=args)
