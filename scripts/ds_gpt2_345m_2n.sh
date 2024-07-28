@@ -1,3 +1,4 @@
+source .env/bin/activate
 export MASTER_ADDR=$(/usr/sbin/ip a show dev bond0 | grep 'inet ' | awk '{ print $2 }' | cut -d "/" -f 1)
 export MASTER_PORT=$((10000 + (${JOB_ID} % 50000)))
 echo "MASTER_ADDR=${MASTER_ADDR}"

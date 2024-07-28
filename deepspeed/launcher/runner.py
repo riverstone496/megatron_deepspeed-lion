@@ -119,7 +119,7 @@ def parse_args(args=None):
                         "inferred via 'hostname -I' if not specified.")
 
     parser.add_argument("--launcher",
-                        default=PDSH_LAUNCHER,
+                        default=OPENMPI_LAUNCHER,
                         type=str,
                         help="(optional) choose launcher backend for multi-node "
                         "training. Options currently include PDSH, OpenMPI, MVAPICH, SLURM, MPICH, IMPI.")
