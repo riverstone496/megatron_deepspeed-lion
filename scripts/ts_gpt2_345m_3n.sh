@@ -7,6 +7,7 @@
 #$ -p -5
 
 # Load modules
+source .env/bin/activate
 module use /gs/bs/tga-bayes-crest/fujii/modulefiles
 module load ylab/cuda/12.1
 module load ylab/cudnn/8.9.7
@@ -114,4 +115,4 @@ deepspeed --num_nodes ${NUM_NODES} \
   --deepspeed_config ${CONFIG_FILE} \
   --zero-stage ${ZERO_STAGE} \
   --deepspeed-activation-checkpointing \
-  --optimizer lion \
+  --optimizer adam \
