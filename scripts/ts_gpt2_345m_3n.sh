@@ -7,8 +7,7 @@
 #$ -p -5
 
 # Load modules
-module use ~/modulefiles
-
+module use /gs/bs/tga-bayes-crest/fujii/modulefiles
 module load ylab/cuda/12.1
 module load ylab/cudnn/8.9.7
 module load ylab/nccl/cuda-12.1/2.18.3
@@ -83,17 +82,10 @@ ZERO_STAGE=1
 export NCCL_DEBUG=WARN
 
 # Run Command
-mpirun -np ${NUM_GPUS} \
-  --npernode ${NUM_GPUS_PER_NODE} \
-  -hostfile ${HOSTFILE_NAME} \
-  -x MASTER_ADDR=${MASTER_NODE} \
-  -x MASTER_PORT=${MASTER_PORT} \
-  -x CUDA_DEVICE_MAX_CONNECTIONS=1 \
-  -x LD_LIBRARY_PATH \
-  -x PATH \
-  -bind-to none \
-  -x PATH \
-  python pretrain_gpt.py \
+# Run Command
+deepspeed --num_nodes ${NUM_NODES} \
+  --num_gpus ${NUM_GPUS_PER_NODE} \
+  pretrain_gpt.py \
   --tensor-model-parallel-size ${TP_SIZE} \
   --pipeline-model-parallel-size ${PP_SIZE} \
   --num-layers ${NUM_LAYERS} \
@@ -132,4 +124,4 @@ mpirun -np ${NUM_GPUS} \
   --deepspeed_config ${CONFIG_FILE} \
   --zero-stage ${ZERO_STAGE} \
   --deepspeed-activation-checkpointing \
-  --optimizer adam \
+  --optimizer onebitadam \

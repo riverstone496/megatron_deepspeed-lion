@@ -1,7 +1,7 @@
 source .env/bin/activate
 
-MASTER_NODE=$(/usr/sbin/ip a show | grep inet | grep 192.168.205 | head -1 | cut -d " " -f 6 | cut -d "/" -f 1)
-MASTER_PORT=$((10000 + ($SLURM_JOBID % 50000)))
+MASTER_ADDR=$(/usr/sbin/ip a show dev bond0 | grep 'inet ' | awk '{ print $2 }' | cut -d "/" -f 1)
+MASTER_PORT=$((10000 + (${JOB_ID} % 50000)))
 
 # Dataset path & checkpoint path
 DATASET_PATH=dataset/arxiv_text_document
@@ -93,4 +93,4 @@ deepspeed --num_nodes ${NUM_NODES} \
   --deepspeed_config ${CONFIG_FILE} \
   --zero-stage ${ZERO_STAGE} \
   --deepspeed-activation-checkpointing \
-  --optimizer mvlion \
+  --optimizer onebitadam \
