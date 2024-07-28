@@ -4,17 +4,20 @@ export MASTER_PORT=$((10000 + (${JOB_ID} % 50000)))
 echo "MASTER_ADDR=${MASTER_ADDR}"
 
 # hostfile
-export NUM_GPU_PER_NODE=4
 NODE_TYPE="h100"
 
+# GPU resources
 NUM_NODES=$NHOSTS
-NUM_GPUS=$((${NUM_NODES} * ${NUM_GPU_PER_NODE}))
+NUM_GPUS_PER_NODE=4
+NUM_GPUS=$((${NUM_NODES} * ${NUM_GPUS_PER_NODE}))
+echo "NUM_NODES=${NUM_NODES}"
+echo "NUM_GPUS=${NUM_GPUS}"
 
 mkdir -p ./hostfile
 
 HOSTFILE_NAME=./hostfile/hostfile_${JOB_ID}
 while read -r hostname _ rest; do
-    echo "${hostname} slots=${NUM_GPU_PER_NODE}"
+    echo "${hostname} slots=${NUM_GPUS_PER_NODE}"
 done <"$PE_HOSTFILE" >"$HOSTFILE_NAME"
 
 # Dataset path & checkpoint path
@@ -29,13 +32,6 @@ MERGE_PATH=dataset/gpt2-merges.txt
 NUM_LAYERS=24
 HIDDEN_SIZE=1024
 NUM_ATTN_HEADS=16
-
-# GPU resources
-NUM_NODES=$NHOSTS
-NUM_GPUS_PER_NODE=1
-NUM_GPUS=$((${NUM_NODES} * ${NUM_GPUS_PER_NODE}))
-echo "NUM_NODES=${NUM_NODES}"
-echo "NUM_GPUS=${NUM_GPUS}"
 
 # Parellel parameters
 PP_SIZE=1
