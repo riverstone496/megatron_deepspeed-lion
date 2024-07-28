@@ -14,23 +14,8 @@ module load ylab/nccl/cuda-12.1/2.18.3
 module load ylab/hpcx/2.17.1
 module load ninja/1.11.1
 
-export MASTER_ADDR=$(/usr/sbin/ip a show dev bond0 | grep 'inet ' | awk '{ print $2 }' | cut -d "/" -f 1)
-export MASTER_PORT=$((10000 + (${JOB_ID} % 50000)))
-echo "MASTER_ADDR=${MASTER_ADDR}"
-
-# hostfile
-export NUM_GPU_PER_NODE=4
-NODE_TYPE="h100"
-
-NUM_NODES=$NHOSTS
-NUM_GPUS=$((${NUM_NODES} * ${NUM_GPU_PER_NODE}))
-
-mkdir -p ./hostfile
-
-HOSTFILE_NAME=./hostfile/hostfile_${JOB_ID}
-while read -r hostname _ rest; do
-    echo "${hostname} slots=${NUM_GPU_PER_NODE}"
-done <"$PE_HOSTFILE" >"$HOSTFILE_NAME"
+MASTER_ADDR=$(/usr/sbin/ip a show dev bond0 | grep 'inet ' | awk '{ print $2 }' | cut -d "/" -f 1)
+MASTER_PORT=$((10000 + (${JOB_ID} % 50000)))
 
 # Dataset path & checkpoint path
 DATASET_PATH=dataset/arxiv_text_document
@@ -47,10 +32,8 @@ NUM_ATTN_HEADS=16
 
 # GPU resources
 NUM_NODES=$NHOSTS
-NUM_GPUS_PER_NODE=1
+NUM_GPUS_PER_NODE=4
 NUM_GPUS=$((${NUM_NODES} * ${NUM_GPUS_PER_NODE}))
-echo "NUM_NODES=${NUM_NODES}"
-echo "NUM_GPUS=${NUM_GPUS}"
 
 # Parellel parameters
 PP_SIZE=1
@@ -79,12 +62,19 @@ SEED=1234
 CONFIG_FILE=scripts/ds_config_gpt2_345m_${NUM_GPUS}.json
 ZERO_STAGE=1
 
-export NCCL_DEBUG=WARN
+# for debug
+export CUDA_LAUNCH_BLOCKING=1
 
-# Run Command
+mkdir hostfile
+HOSTFILE_NAME=./hostfile/hostfile_${JOB_ID}
+while read -r hostname _ rest; do
+    echo "${hostname} slots=${NUM_GPUS_PER_NODE}"
+done <"$PE_HOSTFILE" >"$HOSTFILE_NAME"
+
 # Run Command
 deepspeed --num_nodes ${NUM_NODES} \
   --num_gpus ${NUM_GPUS_PER_NODE} \
+  --hostfile ${HOSTFILE_NAME} \
   pretrain_gpt.py \
   --tensor-model-parallel-size ${TP_SIZE} \
   --pipeline-model-parallel-size ${PP_SIZE} \
@@ -124,4 +114,4 @@ deepspeed --num_nodes ${NUM_NODES} \
   --deepspeed_config ${CONFIG_FILE} \
   --zero-stage ${ZERO_STAGE} \
   --deepspeed-activation-checkpointing \
-  --optimizer onebitadam \
+  --optimizer lion \

@@ -1,5 +1,5 @@
 {
-  "train_batch_size": 32,
+  "train_batch_size": 96,
   "gradient_accumulation_steps": 1,
   "steps_per_print": 1,
   "wandb": {
@@ -32,8 +32,8 @@
   "zero_allow_untested_optimizer": true,
   "comms_logger": {
   "enabled": true,
-  "verbose": false,
+  "verbose": true,
   "prof_all": true,
-  "debug": false
+  "debug": true
 }
 }

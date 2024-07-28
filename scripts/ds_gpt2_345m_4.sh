@@ -17,7 +17,7 @@ HIDDEN_SIZE=1024
 NUM_ATTN_HEADS=16
 
 # GPU resources
-NUM_NODES=1
+NUM_NODES=$NHOSTS
 NUM_GPUS_PER_NODE=4
 NUM_GPUS=$((${NUM_NODES} * ${NUM_GPUS_PER_NODE}))
 
@@ -51,9 +51,16 @@ ZERO_STAGE=1
 # for debug
 export CUDA_LAUNCH_BLOCKING=1
 
+mkdir hostfile
+HOSTFILE_NAME=./hostfile/hostfile_${JOB_ID}
+while read -r hostname _ rest; do
+    echo "${hostname} slots=${NUM_GPUS_PER_NODE}"
+done <"$PE_HOSTFILE" >"$HOSTFILE_NAME"
+
 # Run Command
 deepspeed --num_nodes ${NUM_NODES} \
   --num_gpus ${NUM_GPUS_PER_NODE} \
+  --hostfile ${HOSTFILE_NAME} \
   pretrain_gpt.py \
   --tensor-model-parallel-size ${TP_SIZE} \
   --pipeline-model-parallel-size ${PP_SIZE} \
@@ -93,4 +100,4 @@ deepspeed --num_nodes ${NUM_NODES} \
   --deepspeed_config ${CONFIG_FILE} \
   --zero-stage ${ZERO_STAGE} \
   --deepspeed-activation-checkpointing \
-  --optimizer onebitadam \
+  --optimizer adam \
