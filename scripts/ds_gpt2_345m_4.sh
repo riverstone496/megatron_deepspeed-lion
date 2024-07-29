@@ -1,7 +1,28 @@
-source .env/bin/activate
+module use /gs/bs/tga-bayes-crest/fujii/modulefiles
+module load ylab/cuda/12.1
+module load ylab/cudnn/8.9.7
+module load ylab/nccl/cuda-12.1/2.18.3
+module load ylab/hpcx/2.17.1
+module load ninja/1.11.1
 
+# distributed settings
+export MASTER_ADDR=$(/usr/sbin/ip a show dev bond0 | grep 'inet ' | awk '{ print $2 }' | cut -d "/" -f 1)
+export MASTER_PORT=$((10000 + ($JOB_ID % 50000)))
 MASTER_ADDR=$(/usr/sbin/ip a show dev bond0 | grep 'inet ' | awk '{ print $2 }' | cut -d "/" -f 1)
 MASTER_PORT=$((10000 + (${JOB_ID} % 50000)))
+
+export NUM_GPU_PER_NODE=4
+# GPU resources
+NUM_NODES=$NHOSTS
+NUM_GPUS_PER_NODE=4
+NUM_GPUS=$((${NUM_NODES} * ${NUM_GPUS_PER_NODE}))
+
+mkdir -p ./hostfile
+HOSTFILE_NAME=./hostfile/hostfile_${JOB_ID}
+rm -rf ${HOSTFILE_NAME}
+while read -r hostname _ rest; do
+  echo "${hostname} slots=${NUM_GPU_PER_NODE}"
+done <"$PE_HOSTFILE" >"$HOSTFILE_NAME"
 
 # Dataset path & checkpoint path
 DATASET_PATH=dataset/arxiv_text_document
@@ -16,10 +37,6 @@ NUM_LAYERS=24
 HIDDEN_SIZE=1024
 NUM_ATTN_HEADS=16
 
-# GPU resources
-NUM_NODES=$NHOSTS
-NUM_GPUS_PER_NODE=4
-NUM_GPUS=$((${NUM_NODES} * ${NUM_GPUS_PER_NODE}))
 
 # Parellel parameters
 PP_SIZE=1
@@ -46,16 +63,7 @@ SEED=1234
 
 # deepspeed configuration
 CONFIG_FILE=scripts/ds_config_gpt2_345m_${NUM_GPUS}.json
-ZERO_STAGE=1
-
-# for debug
-export CUDA_LAUNCH_BLOCKING=1
-
-mkdir hostfile
-HOSTFILE_NAME=./hostfile/hostfile_${JOB_ID}
-while read -r hostname _ rest; do
-    echo "${hostname} slots=${NUM_GPUS_PER_NODE}"
-done <"$PE_HOSTFILE" >"$HOSTFILE_NAME"
+ZERO_STAGE=0
 
 # Run Command
 deepspeed --num_nodes ${NUM_NODES} \
@@ -100,4 +108,4 @@ deepspeed --num_nodes ${NUM_NODES} \
   --deepspeed_config ${CONFIG_FILE} \
   --zero-stage ${ZERO_STAGE} \
   --deepspeed-activation-checkpointing \
-  --optimizer adam \
+  --optimizer onebitlion \

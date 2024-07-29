@@ -10,7 +10,7 @@ module load ninja/1.11.1
 export MASTER_ADDR=$(/usr/sbin/ip a show dev bond0 | grep 'inet ' | awk '{ print $2 }' | cut -d "/" -f 1)
 export MASTER_PORT=$((10000 + ($JOB_ID % 50000)))
 # hostfile
-export NUM_GPU_PER_NODE=1
+export NUM_GPU_PER_NODE=4
 NUM_NODES=$NHOSTS
 NUM_GPUS=$((${NUM_NODES} * ${NUM_GPU_PER_NODE}))
 echo "NHOSTS=${NHOSTS}"

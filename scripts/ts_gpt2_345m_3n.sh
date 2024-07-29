@@ -7,7 +7,8 @@
 #$ -p -5
 
 # Load modules
-source .env/bin/activate
+# source .env/bin/activate
+. ~/.bashrc
 module use /gs/bs/tga-bayes-crest/fujii/modulefiles
 module load ylab/cuda/12.1
 module load ylab/cudnn/8.9.7
@@ -35,6 +36,8 @@ NUM_ATTN_HEADS=16
 NUM_NODES=$NHOSTS
 NUM_GPUS_PER_NODE=4
 NUM_GPUS=$((${NUM_NODES} * ${NUM_GPUS_PER_NODE}))
+echo "NUM_NODES=${NUM_NODES}"
+echo "NUM_GPUS=${NUM_GPUS}"
 
 # Parellel parameters
 PP_SIZE=1
