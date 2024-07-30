@@ -66,6 +66,17 @@ CONFIG_FILE=scripts/ds_config_gpt2_345m_${NUM_GPUS}.json
 ZERO_STAGE=0
 
 # Run Command
+CUDA_LAUNCH_BLOCKING=1 mpirun -np $NUM_GPUS \
+  --npernode $NUM_GPU_PER_NODE \
+  -hostfile $HOSTFILE_NAME \
+  -x MASTER_ADDR=$MASTER_ADDR \
+  -x MASTER_PORT=$MASTER_PORT \
+  -x CUDA_DEVICE_MAX_CONNECTIONS=1 \
+  -x LD_LIBRARY_PATH \
+  -x PATH \
+  -bind-to none \
+  python users/distributed.py 
+
 deepspeed --num_nodes ${NUM_NODES} \
   --num_gpus ${NUM_GPUS_PER_NODE} \
   --hostfile ${HOSTFILE_NAME} \
@@ -108,4 +119,4 @@ deepspeed --num_nodes ${NUM_NODES} \
   --deepspeed_config ${CONFIG_FILE} \
   --zero-stage ${ZERO_STAGE} \
   --deepspeed-activation-checkpointing \
-  --optimizer onebitlion \
+  --optimizer onebitadam \

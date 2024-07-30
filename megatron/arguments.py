@@ -501,7 +501,11 @@ def _add_training_args(parser):
                        help='Use Tutel optimization for MoE')
     group.add_argument('--inference', action='store_true',
                        help='Very basic inference mode: not allocating optim/lr - requires ZERO_STAGE=0')
-
+    group.add_argument('--momentum_freeze_step', type=int, default=10,
+                       help='Batch size per model instance (local batch size). '
+                       'Global batch size is local batch size times data '
+                       'parallel size times number of micro batches.')
+    
     return parser
 
 
@@ -568,7 +572,7 @@ def _add_learning_rate_args(parser):
                        '(learning rate, warmup iterations, minimum learning '
                        'rate, maximum number of iterations, and decay style '
                        'from checkpoint and ignore input arguments.')
-
+    
     return parser
 
 

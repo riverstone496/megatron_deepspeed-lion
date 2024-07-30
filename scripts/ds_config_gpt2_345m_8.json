@@ -7,7 +7,7 @@
     "project": "megatron-deepspeed"
   },
   "zero_optimization": {
-    "stage": 1
+    "stage": 0
   },
   "optimizer": {
     "type": "Adam",
@@ -29,11 +29,5 @@
     "min_loss_scale": 1
   },
   "wall_clock_breakdown": false,
-  "zero_allow_untested_optimizer": true,
-  "comms_logger": {
-  "enabled": true,
-  "verbose": true,
-  "prof_all": true,
-  "debug": true
-}
+  "zero_allow_untested_optimizer": true
 }

@@ -98,11 +98,11 @@ def get_megatron_optimizer(model, deepspeed=None):
                             lr=args.lr,
                             weight_decay=args.weight_decay,
                             betas=(args.adam_beta1, args.adam_beta2),
-                            eps=args.adam_eps)
+                            eps=args.adam_eps,
+                            freeze_step=args.momentum_freeze_step)
         elif args.optimizer == 'lion':
             from .standard.lion import Lion
             optimizer = Lion(param_groups,
-                            deepspeed=deepspeed,
                             lr=args.lr,
                             weight_decay=args.weight_decay,
                             betas=(args.adam_beta1, args.adam_beta2))
@@ -119,7 +119,8 @@ def get_megatron_optimizer(model, deepspeed=None):
                             deepspeed=deepspeed,
                             lr=args.lr,
                             weight_decay=args.weight_decay,
-                            betas=(args.adam_beta1, args.adam_beta2))
+                            betas=(args.adam_beta1, args.adam_beta2),
+                            freeze_step=args.momentum_freeze_step)
         else:
             raise Exception('{} optimizer is not supported.'.format(
             args.optimizer))
