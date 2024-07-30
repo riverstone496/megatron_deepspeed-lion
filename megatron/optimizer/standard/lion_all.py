@@ -11,7 +11,7 @@ from deepspeed.runtime.utils import required_torch_version
 from deepspeed import comm as dist
 
 
-class MVLion(torch.optim.Optimizer):
+class LionAll(torch.optim.Optimizer):
     """Implements the 1-bit Adam algorithm. Currently GPU-only.
     For usage example please see https://www.deepspeed.ai/tutorials/onebit-adam/
     For technical details please read https://arxiv.org/abs/2102.02888
@@ -55,7 +55,7 @@ class MVLion(torch.optim.Optimizer):
 
         defaults = dict(lr=lr, betas=betas, weight_decay=weight_decay)
 
-        super(MVLion, self).__init__(params, defaults)
+        super(LionAll, self).__init__(params, defaults)
         self.comm_time = 0.0
         self.step_time = 0.0
         self.ave_step = 1
@@ -175,30 +175,11 @@ class MVLion(torch.optim.Optimizer):
                         exp_avg.mul_(beta2).add_(1 - beta2, grad)
                     grad = None
                 else:
-                    if 'non_freeze' in group.keys() and group['non_freeze'] is True:
-                        dist.all_reduce(grad)
-                        grad.mul_(1 / dist.get_world_size())
-                        update = exp_avg.clone().mul_(beta1).add(grad, alpha=1 - beta1).sign_()
-                        exp_avg.mul_(beta2).add_(1 - beta2, grad)
-                        grad = None
-                    else:
-                        if self.size > 1:
-                            update = exp_avg.clone().mul_(beta1).add(grad, alpha=1 - beta1)
-                            update = binary_quantize_allreduce(update)
-                        # Because 1-bit compression cannot represent exact zero, it is required to
-                        # provide a momentum mask for those params that have constant exact zeros in their
-                        # momentums, otherwise the compression error would keep accumulating.
-                        # For example, for BERT pre-training seq 128, bert.embeddings.position_embeddings.weight
-                        # always have exact zeros in its momentum for row 129 to 512, because it only
-                        # learns up to seq length 128 while the model supports up to 512 seq length.
-                        # (See example in DeepSpeedExamples/bing_bert/deepspeed_train.py.)
-                        if 'exp_avg_mask' in group:
-                            if update.device != group['exp_avg_mask'].device:
-                                group['exp_avg_mask'] = group['exp_avg_mask'].to(device=update.device)
-                            update.mul_(group['exp_avg_mask'])
-                        if self.initialize is True:
-                            exp_avg.mul_(beta2).add_(1 - beta2, grad)
-                        grad = None
+                    dist.all_reduce(grad)
+                    grad.mul_(1 / dist.get_world_size())
+                    update = exp_avg.clone().mul_(beta1).add(grad, alpha=1 - beta1).sign_()
+                    exp_avg.mul_(beta2).add_(1 - beta2, grad)
+                    grad = None
 
                     if self.initialize:
                         # update = exp_avg / (exp_avg_sq.sqrt() + group['eps'])
@@ -283,54 +264,3 @@ class MVLion(torch.optim.Optimizer):
                     self.state[p].pop('worker_error')
                 if 'server_error' in self.state[p]:
                     self.state[p].pop('server_error')
-
-def pack_binary_tensor(tensor):
-    # -1を0に、1を1に変換
-    packed = (tensor + 1) // 2
-    # 8ビットごとにパックするためのサイズの調整
-    if packed.numel() % 8 != 0:
-        # 必要なパディング量を計算
-        padding_size = 8 - (packed.numel() % 8)
-        # 末尾に0を追加してパディング
-        packed = torch.cat([packed, torch.zeros(padding_size, dtype=packed.dtype, device=packed.device)])
-
-    packed = packed.view(-1, 8)
-    packed = (packed[:, 0] + packed[:, 1] * 2 + packed[:, 2] * 4 + packed[:, 3] * 8 + 
-              packed[:, 4] * 16 + packed[:, 5] * 32 + packed[:, 6] * 64 + packed[:, 7] * 128)
-    return packed.byte()
-
-def unpack_binary_tensor(packed, original_shape):
-    # バイトを8ビットに展開
-    unpacked = torch.zeros(packed.numel() * 8, dtype=torch.uint8, device=packed.device)
-    for i in range(8):
-        unpacked[i::8] = (packed >> i) & 1
-    # 0を-1に、1を1に戻す
-    unpacked = unpacked.to(torch.int8) * 2 - 1
-    # パディングを除去して元の形状にリシェイプ
-    unpacked = unpacked[:original_shape.numel()].view(original_shape)
-    return unpacked
-
-def binary_quantize_allreduce(tensor):
-    # 元のshapeとデバイスを保存
-    original_shape = tensor.shape
-    
-    # テンソルを-1または1に量子化
-    quantized = torch.sign(tensor)
-    # random_choice = torch.randint(0, 2, quantized.shape, dtype=quantized.dtype) * 2 - 1
-    # random_choice = random_choice.to(quantized.device)
-    # quantized = torch.where(quantized == 0, random_choice, quantized)
-    
-    # 量子化されたテンソルをuint8にパック
-    packed = pack_binary_tensor(quantized)
-    
-    # All-Reduceの実行
-    dist.all_reduce(packed)
-    
-    # パックされたテンソルを元の形式に戻す
-    unpacked = unpack_binary_tensor(packed, original_shape)
-    
-    # プロセス数で割って平均を取る
-    world_size = dist.get_world_size()
-    result = unpacked.float() / world_size
-    
-    return result

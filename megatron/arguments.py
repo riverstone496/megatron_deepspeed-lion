@@ -484,7 +484,7 @@ def _add_training_args(parser):
                        help='Create separate groups for MoE params.'
                        'This is necessary for techniques like ZeRO.')
     group.add_argument('--optimizer', type=str, default='adam',
-                       choices=['adam', 'sgd', 'lion', 'zerooneadam', 'onebitadam', 'mvlion', 'onebitlion'],
+                       choices=['adam', 'sgd', 'lion', 'zerooneadam', 'onebitadam', 'mvlion', 'onebitlion', 'lion_all'],
                        help='Optimizer function')
     group.add_argument('--dataloader-type', type=str, default=None,
                        choices=['single', 'cyclic'],
