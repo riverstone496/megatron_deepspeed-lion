@@ -164,7 +164,6 @@ class MVLion(torch.optim.Optimizer):
                 grad.copy_(grads_tensor[offset:offset + grad.numel()].view_as(grad))
                 offset += grad.numel()
 
-        print('all_updates', len(all_updates))
         if all_updates:
             updates_tensor = torch.cat([u.view(-1) for u in all_updates])
             updates_tensor = binary_quantize_allreduce(updates_tensor)
