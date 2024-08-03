@@ -113,8 +113,23 @@ def get_megatron_optimizer(model, deepspeed=None):
                             lr=args.lr,
                             weight_decay=args.weight_decay,
                             betas=(args.adam_beta1, args.adam_beta2))
+        elif args.optimizer == 'lion_all2':
+            from .onebit.lion_all import LionAll
+            optimizer = LionAll(param_groups,
+                            deepspeed=deepspeed,
+                            lr=args.lr,
+                            weight_decay=args.weight_decay,
+                            betas=(args.adam_beta1, args.adam_beta2))
         elif args.optimizer == 'mvlion':
             from .onebit.lion import MVLion
+            optimizer = MVLion(param_groups,
+                            deepspeed=deepspeed,
+                            lr=args.lr,
+                            weight_decay=args.weight_decay,
+                            betas=(args.adam_beta1, args.adam_beta2),
+                            freeze_step=args.momentum_freeze_step)
+        elif args.optimizer == 'mvlion2':
+            from .onebit.lion_optimized import MVLion
             optimizer = MVLion(param_groups,
                             deepspeed=deepspeed,
                             lr=args.lr,

@@ -77,7 +77,7 @@ ZERO_STAGE=0
 #   -bind-to none \
 #   python users/distributed.py 
 
-# export NCCL_IB_DISABLE=1
+export NCCL_IB_DISABLE=1
 
 deepspeed --num_nodes ${NUM_NODES} \
   --num_gpus ${NUM_GPUS_PER_NODE} \
@@ -121,4 +121,4 @@ deepspeed --num_nodes ${NUM_NODES} \
   --deepspeed_config ${CONFIG_FILE} \
   --zero-stage ${ZERO_STAGE} \
   --deepspeed-activation-checkpointing \
-  --optimizer onebitlion \
+  --optimizer lion_all2 \
